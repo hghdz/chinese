@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>MENG 학습 메인페이지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🏠 MENG 학습 메인페이지</h1>
+  <p>원하는 페이지로 이동하세요.</p>
+  <a href="login.html">▶ 로그인하러 가기</a><br><br>
+  <a href="activity.html">▶ 활동하러 가기</a><br><br>
+  <a href="mypage.html">▶ 마이페이지</a>
+</body>
+</html>
