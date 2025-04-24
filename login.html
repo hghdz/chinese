@@ -1,44 +1,45 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>로그인</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body { text-align: center; margin-top: 50px; font-family: Arial; }
+    input { margin: 8px; padding: 6px; width: 200px; }
+    button { padding: 8px 16px; }
+  </style>
 </head>
 <body>
-  <h2>🔐 로그인</h2>
+  <h2>🔑 로그인</h2>
   <input id="school" placeholder="학교명"><br>
   <input id="grade" placeholder="학년"><br>
   <input id="class" placeholder="반"><br>
   <input id="number" placeholder="번호"><br>
   <input id="name" placeholder="이름"><br>
-  <input id="pw" placeholder="비밀번호" type="password"><br><br>
-
+  <input id="pw" type="password" placeholder="비밀번호"><br>
   <button onclick="login()">로그인</button>
 
   <script>
     function login() {
-      const student = {
-        school: document.getElementById("school").value.trim(),
-        grade: document.getElementById("grade").value.trim(),
-        class: document.getElementById("class").value.trim(),
-        number: document.getElementById("number").value.trim(),
-        name: document.getElementById("name").value.trim(),
-        pw: document.getElementById("pw").value.trim()
-      };
-
-      if (Object.values(student).some(v => !v)) {
-        alert("모든 항목을 입력해주세요!");
-        return;
-      }
+      const school = document.getElementById("school").value;
+      const grade = document.getElementById("grade").value;
+      const classNum = document.getElementById("class").value;
+      const number = document.getElementById("number").value;
+      const name = document.getElementById("name").value;
+      const pw = document.getElementById("pw").value;
 
       // localStorage 저장
-      for (let key in student) {
-        localStorage.setItem(key, student[key]);
-      }
+      localStorage.setItem("school", school);
+      localStorage.setItem("grade", grade);
+      localStorage.setItem("class", classNum);
+      localStorage.setItem("number", number);
+      localStorage.setItem("name", name);
+      localStorage.setItem("pw", pw);
 
-      // 메인으로 이동
-      alert("로그인 성공!");
+      // 확인용 콘솔
+      console.log("✅ 저장됨:", { school, grade, classNum, number, name, pw });
+
+      // 메인페이지로 이동
       window.location.href = "index.html";
     }
   </script>
