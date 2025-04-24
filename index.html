@@ -1,17 +1,32 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>MENG 학습 메인페이지</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>MENG 메인페이지</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin-top: 80px;
+    }
+    a {
+      text-decoration: none;
+      color: purple;
+      display: block;
+      margin: 10px 0;
+    }
+  </style>
 </head>
 <body>
   <h1>🏠 MENG 학습 메인페이지</h1>
-  <p>원하는 페이지로 이동하세요.</p>
+  <p id="welcome"></p>
 
-  <a href="login.html">▶ 로그인하러 가기</a><br><br>
-  <a href="activity.html">▶ 활동하러 가기</a><br><br>
-  <a href="mypage.html">▶ 마이페이지</a><br><br>
+  <!-- 🔑 로그인 페이지 링크 추가 -->
+  <a href="login.html">▶ 로그인하러 가기</a>
+
+  <!-- 활동/마이페이지/관리자 페이지 -->
+  <a href="activity.html">▶ 활동하러 가기</a>
+  <a href="mypage.html">▶ 마이페이지</a>
   <a href="admin.html">▶ 교사용 관리자 페이지</a>
 
   <script>
@@ -21,12 +36,9 @@
     const number = localStorage.getItem("number");
 
     if (name && grade && classNum && number) {
-      const whoText = `${grade}학년 ${classNum}반 ${number}번 ${name}`;
-      const greeting = document.createElement("p");
-      greeting.textContent = `👋 환영합니다, ${whoText}님!`;
-      document.body.insertBefore(greeting, document.body.children[2]);
+      document.getElementById("welcome").innerText =
+        `어서오세요, ${grade}학년 ${classNum}반 ${number}번 ${name}님!`;
     }
   </script>
 </body>
 </html>
-
