@@ -1,36 +1,45 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>로그인</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>🔐 로그인</h1>
-  <input id="school" placeholder="학교명"><br><br>
-  <input id="id" placeholder="학번"><br><br>
-  <input id="name" placeholder="이름"><br><br>
+  <h2>🔐 로그인</h2>
+  <input id="school" placeholder="학교명"><br>
+  <input id="grade" placeholder="학년"><br>
+  <input id="class" placeholder="반"><br>
+  <input id="number" placeholder="번호"><br>
+  <input id="name" placeholder="이름"><br>
   <input id="pw" placeholder="비밀번호" type="password"><br><br>
+
   <button onclick="login()">로그인</button>
 
   <script>
     function login() {
-      const school = document.getElementById("school").value.trim();
-      const id = document.getElementById("id").value.trim();
-      const name = document.getElementById("name").value.trim();
-      const pw = document.getElementById("pw").value.trim();
+      const student = {
+        school: document.getElementById("school").value.trim(),
+        grade: document.getElementById("grade").value.trim(),
+        class: document.getElementById("class").value.trim(),
+        number: document.getElementById("number").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        pw: document.getElementById("pw").value.trim()
+      };
 
-      if (!school || !id || !name || !pw) {
-        alert("모든 정보를 입력해주세요!");
+      if (Object.values(student).some(v => !v)) {
+        alert("모든 항목을 입력해주세요!");
         return;
       }
 
-      localStorage.setItem("school", school);
-      localStorage.setItem("id", id);
-      localStorage.setItem("name", name);
-      localStorage.setItem("pw", pw);
+      // localStorage 저장
+      for (let key in student) {
+        localStorage.setItem(key, student[key]);
+      }
 
-      window.location.href = "mypage.html";
+      // 메인으로 이동
+      alert("로그인 성공!");
+      window.location.href = "index.html";
     }
   </script>
 </body>
