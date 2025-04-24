@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>마이페이지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>📚 나의 카드 모음</h1>
+  <div id="studentInfo"></div>
+  <div id="cards"></div>
+
+  <script>
+    const student = {
+      school: localStorage.getItem("school"),
+      id: localStorage.getItem("id"),
+      name: localStorage.getItem("name")
+    };
+
+    if (!student.school || !student.id || !student.name) {
+      alert("로그인이 필요합니다.");
+      window.location.href = "login.html";
+    } else {
+      document.getElementById("studentInfo").innerText =
+        `👤 ${student.school} / ${student.id} / ${student.name}`;
+    }
+
+    const cards = JSON.parse(localStorage.getItem("cards") || "[]");
+    const container = document.getElementById("cards");
+
+    if (cards.length === 0) {
+      container.innerHTML = "<p>저장된 카드가 없습니다.</p>";
+    } else {
+      cards.forEach(card => {
+        const el = document.createElement("div");
+        el.className = "card";
+        el.innerHTML = `
+          <h3>📌 ${card.title}</h3>
+          <p><strong>단계:</strong> ${card.stage}</p>
+          <p>${card.content}</p>
+          <p style="font-size: 0.8em; color: gray;">🕒 ${card.time}</p>
+        `;
+        container.appendChild(el);
+      });
+    }
+  </script>
+</body>
+</html>
