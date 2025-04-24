@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>관리자 페이지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>📊 관리자 페이지</h2>
+  <input id="school" placeholder="학교명">
+  <input id="grade" placeholder="학년 (선택)">
+  <input id="class" placeholder="반 (선택)">
+  <button onclick="loadData()">조회</button>
+  <div id="results"></div>
+
+  <script>
+    function loadData() {
+      const school = document.getElementById("school").value.trim();
+      const grade = document.getElementById("grade").value.trim();
+      const classNum = document.getElementById("class").value.trim();
+
+      if (!school) {
+        alert("학교명을 입력하세요.");
+        return;
+      }
+
+      const query = new URLSearchParams({
+        type: "admin",
+        school,
+        grade,
+        class: classNum
+      });
+
+      fetch(`https://script.google.com/macros/s/웹앱주소/exec?${query.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+          const container = document.getElementById("results");
+          container.innerHTML = `<h3>조회 결과: ${data.length}건</h3>`;
+          if (!data.length) {
+            container.innerHTML += "<p>해당 조건의 데이터가 없습니다.</p>";
+            return;
+          }
+
+          const grouped = {};
+          data.forEach(row => {
+            const key = `${row.grade}학년 ${row.class}반`;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(row);
+          });
+
+          for (let group in grouped) {
+            const section = document.createElement("div");
+            section.innerHTML = `<h4>📘 ${group}</h4>`;
+            grouped[group].forEach(row => {
+              section.innerHTML += `
+                <div class="card">
+                  <p><strong>${row.number}번 ${row.name}</strong></p>
+                  <p><strong>단계:</strong> ${row.stage}</p>
+                  <p><strong>제목:</strong> ${row.title}</p>
+                  <p>${row.content}</p>
+                  <p style="font-size: 0.8em; color: gray;">🕒 ${row.time}</p>
+                </div>
+              `;
+            });
+            container.appendChild(section);
+          }
+        });
+    }
+  </script>
+</body>
+</html>
