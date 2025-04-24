@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>활동 페이지</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🧩 나의 성격 카드 만들기</h1>
+  <input type="text" id="cardTitle" value="나의 성격"><br><br>
+  <textarea id="cardContent" placeholder="나는 창의적이고 열정적이에요!"></textarea><br><br>
+  <button onclick="saveCard()">카드 저장</button>
+  <p id="result"></p>
+
+  <script>
+    function saveCard() {
+      const card = {
+        stage: "성격",
+        title: document.getElementById("cardTitle").value,
+        content: document.getElementById("cardContent").value,
+        time: new Date().toLocaleString()
+      };
+
+      const saved = JSON.parse(localStorage.getItem("cards") || "[]");
+      saved.push(card);
+      localStorage.setItem("cards", JSON.stringify(saved));
+
+      document.getElementById("result").innerText = "✅ 카드가 저장되었습니다!";
+    }
+  </script>
+</body>
+</html>
