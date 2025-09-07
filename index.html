@@ -1,44 +1,471 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>MENG 메인페이지</title>
-  <style>
-    body {
-      text-align: center;
-      font-family: Arial, sans-serif;
-      margin-top: 80px;
-    }
-    a {
-      text-decoration: none;
-      color: purple;
-      display: block;
-      margin: 10px 0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>날짜와 시간 말하기 연습</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Jua', sans-serif;
+            touch-action: manipulation;
+        }
+        .game-container {
+            background: linear-gradient(135deg, #fdfcdc, #f0fff0);
+            border: 4px solid #bbf7d0; /* green-200 */
+        }
+        .calendar {
+            background-color: #fef9c3; /* yellow-100 */
+            border: 3px solid #fde047; /* yellow-300 */
+            border-radius: 1rem;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            min-width: 220px;
+        }
+        #digital-clock-container {
+            min-width: 220px;
+        }
+        #record-btn.recording {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(251, 146, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .feedback-show {
+            animation: pop-in 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        }
+        .audio-btn {
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+    </style>
 </head>
-<body>
-  <h1>🏠 MENG 학습 메인페이지</h1>
-  <p id="welcome"></p>
+<body class="bg-green-50 flex items-center justify-center min-h-screen p-4">
+    <div class="container mx-auto max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 game-container">
+            <header class="text-center mb-6">
+                <h1 class="text-3xl md:text-4xl font-bold text-green-600">🐼 판다의 시간 탐험대 🕰️</h1>
+                <p class="text-gray-500 mt-2 text-lg">달력과 시계를 보고 질문에 답해봐요!</p>
+            </header>
+            
+            <section id="profile-info" class="hidden text-center mb-4 text-lg text-gray-700 bg-white/60 p-2 rounded-lg">
+                <p>🎂 <span class="font-bold">나의 생일:</span> <span id="birthday-info"></span></p>
+            </section>
 
-  <!-- 🔑 로그인 페이지 링크 추가 -->
-  <a href="login.html">▶ 로그인하러 가기</a>
+            <!-- 달력 및 시계 섹션 -->
+            <section class="flex flex-row flex-wrap items-center justify-center gap-6 mb-6">
+                <div id="calendar-container" class="calendar flex-1">
+                    <div id="month" class="text-2xl font-bold text-yellow-700 bg-yellow-200 rounded-t-lg py-1">1월</div>
+                    <div class="text-base font-bold text-red-600 bg-red-200 rounded-full px-4 py-1 my-2 inline-block">오늘</div>
+                    <div id="day" class="text-7xl font-bold text-yellow-900 py-2">1</div>
+                    <div id="weekday" class="text-xl text-yellow-800 bg-yellow-200 rounded-b-lg py-1">월요일</div>
+                </div>
+                <div id="digital-clock-container" class="flex-1 flex flex-col items-center justify-center h-40 bg-white rounded-2xl shadow-lg border-4 border-emerald-300">
+                    <span id="digital-time-period" class="text-3xl font-bold text-emerald-500">오전</span>
+                    <span id="digital-time" class="text-5xl font-mono text-emerald-600 tracking-wider">00:00</span>
+                </div>
+            </section>
+            
+            <!-- 시작 화면 -->
+            <section id="start-screen" class="text-center py-4">
+                <p class="text-xl mb-4 text-gray-700">총 5단계로 구성된 퀴즈를 시작합니다!</p>
+                <button id="start-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-2xl transition-transform transform hover:scale-105 shadow-lg">시작!</button>
+                 <p id="start-error" class="text-sm text-red-500 mt-2 h-5"></p>
+            </section>
 
-  <!-- 활동/마이페이지/관리자 페이지 -->
-  <a href="activity.html">▶ 활동하러 가기</a>
-  <a href="mypage.html">▶ 마이페이지</a>
-  <a href="admin.html">▶ 교사용 관리자 페이지</a>
+            <!-- 퀴즈 섹션 (처음에는 숨김) -->
+            <section id="quiz-section" class="hidden">
+                <div id="progress-tracker" class="text-center mb-4 bg-white/50 rounded-lg p-2">
+                    <span id="stage-info" class="font-bold text-green-700"></span> | <span id="question-progress" class="text-gray-600"></span>
+                </div>
+                <div id="mission-card" class="bg-sky-100 border-2 border-sky-300 text-sky-800 p-4 rounded-lg mb-6 text-center shadow-md">
+                    <p class="font-bold text-xl">⭐ 오늘의 질문! ⭐</p>
+                    <div class="mt-2">
+                        <p id="mission-text-hanzi" class="text-2xl text-sky-900 font-bold">질문을 기다리고 있어요...</p>
+                        <p id="mission-text-pinyin" class="text-md text-sky-700 mt-1">...</p>
+                        <p id="mission-hint" class="text-sm text-sky-600 mt-2 hidden"></p>
+                    </div>
+                </div>
 
-  <script>
-    const name = localStorage.getItem("name");
-    const grade = localStorage.getItem("grade");
-    const classNum = localStorage.getItem("class");
-    const number = localStorage.getItem("number");
+                <div class="user-response-area mt-4 bg-white p-4 rounded-lg shadow-inner">
+                     <p class="font-bold text-left text-gray-600">😄 나 (wǒ):</p>
+                     <input type="text" id="user-input" class="bg-transparent text-gray-800 text-lg placeholder-gray-500 w-full text-center outline-none py-2" placeholder="请用中文回答 (중국어로 대답하세요)" readonly>
+                </div>
 
-    if (name && grade && classNum && number) {
-      document.getElementById("welcome").innerText =
-        `어서오세요, ${grade}학년 ${classNum}반 ${number}번 ${name}님!`;
+                <div id="voice-controls" class="controls text-center mt-6">
+                    <button id="record-btn" class="bg-orange-400 hover:bg-orange-500 text-white font-bold p-4 rounded-full transition-transform transform hover:scale-110 shadow-lg inline-flex items-center justify-center">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8h-1a6 6 0 11-12 0H3a7.001 7.001 0 006 6.93V17H7v1h6v-1h-2v-2.07z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+
+                <p id="feedback" class="mt-4 text-xl font-semibold h-8 text-center"></p>
+
+                <div class="text-center mt-4">
+                    <button id="next-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-5 rounded-full text-lg hidden">다음 문제</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- 단계별 결과 팝업 -->
+    <div id="stage-result-popup" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <header class="text-center mb-4 flex-shrink-0">
+                <h2 id="stage-result-title" class="text-3xl font-bold text-blue-600"></h2>
+            </header>
+            <div id="stage-result-log" class="flex-grow overflow-y-auto space-y-4 pr-2 border-t pt-4"></div>
+            <footer class="mt-6 text-center flex-shrink-0">
+                <button id="next-stage-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-full text-xl">다음 단계로</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- 최종 결과 팝업 -->
+    <div id="final-result-popup" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] flex flex-col">
+            <div id="final-result-content">
+                <header class="text-center mb-4 flex-shrink-0">
+                    <h2 class="text-3xl font-bold text-green-600">🎉 최종 연습 결과 🎉</h2>
+                </header>
+                <div id="final-result-log" class="flex-grow overflow-y-auto space-y-4 pr-2 border-t pt-4 max-h-[50vh]"></div>
+            </div>
+            <footer class="mt-6 text-center flex-shrink-0 space-y-2 sm:space-x-4">
+                <button id="save-result-btn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-6 rounded-full text-lg">결과 저장하기</button>
+                <button id="restart-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-full text-xl mt-2 sm:mt-0">다시하기</button>
+                <button id="close-popup-btn" class="text-gray-500 hover:text-gray-700 text-sm mt-2 sm:mt-0">닫기</button>
+            </footer>
+        </div>
+    </div>
+
+<script>
+// DOM Elements
+const stageInfoEl = document.getElementById('stage-info');
+const questionProgressEl = document.getElementById('question-progress');
+const stageResultPopupEl = document.getElementById('stage-result-popup');
+const stageResultTitleEl = document.getElementById('stage-result-title');
+const stageResultLogEl = document.getElementById('stage-result-log');
+const nextStageBtn = document.getElementById('next-stage-btn');
+const finalResultPopupEl = document.getElementById('final-result-popup');
+const finalResultLogEl = document.getElementById('final-result-log');
+const restartBtn = document.getElementById('restart-btn');
+const closePopupBtn = document.getElementById('close-popup-btn');
+const saveResultBtn = document.getElementById('save-result-btn');
+const profileInfoEl = document.getElementById('profile-info');
+const birthdayInfoEl = document.getElementById('birthday-info');
+const finalResultContentEl = document.getElementById('final-result-content');
+const calendarMonthEl = document.getElementById('month');
+const calendarDayEl = document.getElementById('day');
+const calendarWeekdayEl = document.getElementById('weekday');
+const digitalTimeEl = document.getElementById('digital-time');
+const digitalTimePeriodEl = document.getElementById('digital-time-period');
+const startScreenEl = document.getElementById('start-screen');
+const startBtn = document.getElementById('start-btn');
+const startErrorEl = document.getElementById('start-error');
+const quizSectionEl = document.getElementById('quiz-section');
+const missionTextHanziEl = document.getElementById('mission-text-hanzi');
+const missionTextPinyinEl = document.getElementById('mission-text-pinyin');
+const missionHintEl = document.getElementById('mission-hint');
+const userInputEl = document.getElementById('user-input');
+const recordBtn = document.getElementById('record-btn');
+const feedbackEl = document.getElementById('feedback');
+const nextBtn = document.getElementById('next-btn');
+
+// --- Speech API & MediaRecorder Setup ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'zh-CN';
+    recognition.interimResults = false;
+} else {
+    startErrorEl.textContent = '이 브라우저는 음성 인식을 지원하지 않습니다.';
+    startBtn.disabled = true;
+}
+let mediaRecorder;
+let audioChunks = [];
+let audioStream;
+
+// --- Game Data ---
+const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+const weekdaysKorean = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
+const timePeriodKorean = { "上午": "오전", "下午": "오후", "晚上": "저녁" };
+const morningActivities = ['起床', '吃早饭', '上学', '上课', '出发'];
+const afternoonActivities = ['吃午饭', '吃麻辣烫', '喝水', '喝可乐', '下课', '放学', '去中国', '去北京', '去长城', '到北京', '到天安门'];
+const eveningActivities = ['吃晚饭', '吃北京烤鸭', '回家', '睡觉', '看京剧', '喝水', '喝可乐'];
+const chineseNumbers = { '0': '零', '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九', '10': '十', '11': '十一', '12': '十二', '13': '十三', '14': '十四', '15': '十五', '16': '十六', '17': '十七', '18': '十八', '19': '十九', '20': '二十', '21': '二十一', '22': '二十二', '23': '二十三', '24': '二十四', '25': '二十五', '26': '二十六', '27': '二十七', '28': '二十八', '29': '二十九', '30': '三十', '31': '三十一' };
+const pinyinMap = { '1':'yī','2':'èr','3':'sān','4':'sì','5':'wǔ','6':'liù','7':'qī','8':'bā','9':'jiǔ','10':'shí','11':'shíyī','12':'shíèr','月':'yuè','号':'hào','日':'rì','天':'tiān','星期':'xīngqī','星期天':'xīngqītiān','上':'shàng','午':'wǔ','下':'xià','晚':'wǎn','现':'xiàn','在':'zài','几':'jǐ','点':'diǎn','分':'fēn','你':'nǐ','我':'wǒ','做':'zuò','什':'shén','么':'me','今':'jīn','昨':'zuó','明':'míng','生':'shēng','的':'de','是':'shì', '两':'liǎng','半': 'bàn', '一刻': 'yí kè', '三刻': 'sān kè','上午':'shàngwǔ', '下午':'xiàwǔ', '晚上':'wǎnshang','起床':'qǐchuáng','吃早饭':'chī zǎofàn','吃晚饭':'chī wǎnfàn','吃午饭':'chī wǔfàn','吃麻辣烫':'chī málàtàng','吃北京烤鸭':'chī Běijīng kǎoyā','喝水':'hē shuǐ','喝可乐':'hē kělè','上学':'shàngxué','放学':'fàngxué','上课':'shàngkè','下课':'xiàkè','回家':'huíjiā','睡觉':'shuìjiào','出发':'chūfā','去中国':'qù Zhōngguó','去北京':'qù Běijīng','去长城':'qù Chángchéng','到北京':'dào Běijīng','到天安门':'dào Tiānānmén','看京剧':'kàn jīngjù' };
+
+// --- Game State ---
+let currentQuestion = {};
+let practiceLog = [];
+let currentStage = 1;
+let questionNumberInStage = 1;
+let myBirthday = {};
+const QUESTIONS_PER_STAGE = 4;
+const MAX_STAGES = 5;
+
+// --- Helper Functions ---
+function speak(text, lang = 'zh-CN') { if (!text) return; if (window.currentAudio && !window.currentAudio.paused) { window.currentAudio.pause(); } const encodedText = encodeURIComponent(text); const audio = new Audio(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${lang}&client=tw-ob`); window.currentAudio = audio; audio.play(); }
+function convertFullPhraseToPinyin(text) { if (!text) return ''; const words = Object.keys(pinyinMap).sort((a, b) => b.length - a.length); let remainingText = text; let pinyinText = ''; while (remainingText.length > 0) { let found = false; for (const word of words) { if (remainingText.startsWith(word)) { pinyinText += pinyinMap[word] + ' '; remainingText = remainingText.substring(word.length); found = true; break; } } if (!found) { let char = remainingText[0]; let numKey = Object.keys(chineseNumbers).find(key => chineseNumbers[key] === char); if(numKey && pinyinMap[numKey]){ pinyinText += pinyinMap[numKey] + ' '; } else { pinyinText += char; } remainingText = remainingText.substring(1); } } return pinyinText.trim().replace(/\s+/g, ' '); }
+function getChineseMinute(minute) { if (minute === 0) return ''; if (minute < 10) return chineseNumbers[minute.toString()]; if (minute === 10) return '十'; if (minute < 20) return '十' + chineseNumbers[(minute % 10).toString()]; const tens = Math.floor(minute / 10); const ones = minute % 10; return chineseNumbers[tens.toString()] + '十' + (ones > 0 ? chineseNumbers[ones.toString()] : ''); }
+function updateCalendar(month, day, dayOfWeek) { calendarMonthEl.textContent = `${month}월`; calendarDayEl.textContent = day; calendarWeekdayEl.textContent = weekdaysKorean[dayOfWeek]; }
+function updateDigitalClock(hour, minute, timePeriod) { const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour); const formattedHour = displayHour.toString().padStart(2, '0'); const formattedMinute = minute.toString().padStart(2, '0'); digitalTimeEl.textContent = `${formattedHour}:${formattedMinute}`; digitalTimePeriodEl.textContent = timePeriodKorean[timePeriod]; }
+function updateProgressTracker() { const stageNames = ["", "날짜 묻기", "요일 묻기", "시간 묻기", "일과 묻기", "랜덤 묻기"]; stageInfoEl.textContent = `단계 ${currentStage}: ${stageNames[currentStage]}`; questionProgressEl.textContent = `${questionNumberInStage}/${QUESTIONS_PER_STAGE}`; }
+function getDateInfo(baseDate, offset) { const newDate = new Date(2024, baseDate.month - 1, baseDate.day); newDate.setDate(newDate.getDate() + offset); return { month: newDate.getMonth() + 1, day: newDate.getDate(), dayOfWeek: newDate.getDay() }; }
+
+// --- Core Game Logic ---
+function generateNewQuestion() {
+    const month = Math.floor(Math.random() * 12) + 1;
+    const day = Math.floor(Math.random() * 28) + 1;
+    const dayOfWeek = new Date(2024, month - 1, day).getDay();
+    const minute = Math.floor(Math.random() * 60);
+    const timePeriodRoll = Math.random();
+    let hour, timePeriod, activity;
+
+    if (timePeriodRoll < 0.33) { timePeriod = "上午"; hour = Math.floor(Math.random() * 6) + 6; activity = morningActivities[Math.floor(Math.random() * morningActivities.length)]; } 
+    else if (timePeriodRoll < 0.66) { timePeriod = "下午"; hour = Math.floor(Math.random() * 6) + 12; activity = afternoonActivities[Math.floor(Math.random() * afternoonActivities.length)]; } 
+    else { timePeriod = "晚上"; hour = Math.floor(Math.random() * 6) + 18; activity = eveningActivities[Math.floor(Math.random() * eveningActivities.length)]; }
+    
+    let questionType;
+    if (currentStage === 1) questionType = 1; else if (currentStage === 2) questionType = 2; else if (currentStage === 3) questionType = 0; else if (currentStage === 4) questionType = 3; else if (currentStage === 5) questionType = Math.floor(Math.random() * 4);
+
+    let questionText, questionPinyin, answerKeywords, altAnswerKeywords, questionSubType;
+    const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+    missionHintEl.classList.add('hidden');
+
+    switch (questionType) {
+        case 0: questionText = "现在几点？"; questionPinyin = "xiànzài jǐ diǎn?"; answerKeywords = [timePeriod, (displayHour === 2 ? '两' : displayHour.toString()), '点']; altAnswerKeywords = [timePeriod, (displayHour === 2 ? '两' : chineseNumbers[displayHour.toString()]), '点']; if(minute > 0) { answerKeywords.push(minute.toString(), '分'); altAnswerKeywords.push(getChineseMinute(minute), '分'); } break;
+        case 1: { const subTypes = ['today', 'tomorrow', 'yesterday', 'birthday']; questionSubType = subTypes[Math.floor(Math.random() * subTypes.length)];
+            if (questionSubType === 'today') { questionText = "今天几月几号？"; questionPinyin = "jīntiān jǐ yuè jǐ hào?"; answerKeywords = [month.toString(), '月', day.toString(), '号']; altAnswerKeywords = [chineseNumbers[month.toString()], '月', chineseNumbers[day.toString()], '号']; }
+            else if (questionSubType === 'tomorrow') { const tomorrow = getDateInfo({month, day}, 1); questionText = "明天几月几号？"; questionPinyin = "míngtiān jǐ yuè jǐ hào?"; answerKeywords = [tomorrow.month.toString(), '月', tomorrow.day.toString(), '号']; altAnswerKeywords = [chineseNumbers[tomorrow.month.toString()], '月', chineseNumbers[tomorrow.day.toString()], '号']; }
+            else if (questionSubType === 'yesterday') { const yesterday = getDateInfo({month, day}, -1); questionText = "昨天几月几号？"; questionPinyin = "zuótiān jǐ yuè jǐ hào?"; answerKeywords = [yesterday.month.toString(), '月', yesterday.day.toString(), '号']; altAnswerKeywords = [chineseNumbers[yesterday.month.toString()], '月', chineseNumbers[yesterday.day.toString()], '号']; }
+            else { questionText = "你的生日是几月几号？"; questionPinyin = "nǐ de shēngrì shì jǐ yuè jǐ hào?"; answerKeywords = [myBirthday.month.toString(), '月', myBirthday.day.toString(), '号']; altAnswerKeywords = [chineseNumbers[myBirthday.month.toString()], '月', chineseNumbers[myBirthday.day.toString()], '号']; }
+            break; }
+        case 2: { const subTypes = ['today', 'tomorrow', 'yesterday']; questionSubType = subTypes[Math.floor(Math.random() * subTypes.length)];
+            const today = { month, day, dayOfWeek };
+            if (questionSubType === 'today') { questionText = "今天星期几？"; questionPinyin = "jīntiān xīngqī jǐ?"; answerKeywords = [weekdays[today.dayOfWeek]]; }
+            else if (questionSubType === 'tomorrow') { const tomorrow = getDateInfo(today, 1); questionText = "明天星期几？"; questionPinyin = "míngtiān xīngqī jǐ?"; answerKeywords = [weekdays[tomorrow.dayOfWeek]]; }
+            else { const yesterday = getDateInfo(today, -1); questionText = "昨天星期几？"; questionPinyin = "zuótiān xīngqī jǐ?"; answerKeywords = [weekdays[yesterday.dayOfWeek]]; }
+            break; }
+        case 3: questionText = `你几点${activity}？`; questionPinyin = `nǐ jǐ diǎn ${pinyinMap[activity]}?`; answerKeywords = ['我', timePeriod, (displayHour === 2 ? '两' : displayHour.toString()), '点']; altAnswerKeywords = ['我', timePeriod, (displayHour === 2 ? '两' : chineseNumbers[displayHour.toString()]), '点']; if (minute > 0) { answerKeywords.push(minute.toString(), '分'); altAnswerKeywords.push(getChineseMinute(minute), '分'); } answerKeywords.push(activity); altAnswerKeywords.push(activity); missionHintEl.textContent = "(시계에 표시된 시간을 보고 대답하세요)"; missionHintEl.classList.remove('hidden'); break;
     }
-  </script>
+
+    currentQuestion = { month, day, dayOfWeek, hour, minute, timePeriod, activity, questionText, questionPinyin, answerKeywords, altAnswerKeywords, questionType, questionSubType, displayHour, stage: currentStage };
+    updateCalendar(month, day, dayOfWeek);
+    updateDigitalClock(hour, minute, timePeriod);
+    missionTextHanziEl.textContent = questionText;
+    missionTextPinyinEl.textContent = questionPinyin;
+    userInputEl.value = "";
+    feedbackEl.className = 'mt-4 text-xl font-semibold h-8 text-center';
+    feedbackEl.textContent = "";
+    recordBtn.disabled = false;
+    nextBtn.classList.add('hidden');
+    updateProgressTracker();
+    speak(questionText);
+}
+
+function validateAnswer(transcript) {
+    transcript = transcript.replace(/[的了的啊。，]/g, '').trim();
+    if (currentQuestion.displayHour === 2) { transcript = transcript.replace(/二点/g, '两点'); }
+    let isCorrect = currentQuestion.answerKeywords.every(keyword => transcript.includes(keyword));
+    if (currentQuestion.altAnswerKeywords && !isCorrect) { isCorrect = currentQuestion.altAnswerKeywords.every(keyword => transcript.includes(keyword)); }
+    
+    // Special check for Sunday (星期日 vs 星期天)
+    if (!isCorrect && currentQuestion.questionType === 2 && currentQuestion.answerKeywords[0] === "星期日") {
+        if (transcript.includes("星期天")) {
+            isCorrect = true;
+        }
+    }
+
+    if (!isCorrect && (currentQuestion.questionType === 0 || currentQuestion.questionType === 3)) {
+        const { minute, timePeriod, displayHour, activity, questionType } = currentQuestion;
+        const baseHour = (displayHour === 2 ? '两' : chineseNumbers[displayHour.toString()]);
+        let baseKeywordsWithoutTime = questionType === 3 ? ['我', activity] : [];
+        let specialTimeCorrect = false;
+        if (minute === 15) { const specialKeywords = [timePeriod, (displayHour === 2 ? '两' : displayHour.toString()), '点', '一刻', ...baseKeywordsWithoutTime]; const specialKeywordsHanzi = [timePeriod, baseHour, '点', '一刻', ...baseKeywordsWithoutTime]; specialTimeCorrect = (specialKeywords.every(k => transcript.includes(k)) || specialKeywordsHanzi.every(k => transcript.includes(k))) && !transcript.includes('分'); } 
+        else if (minute === 30) { const specialKeywords = [timePeriod, (displayHour === 2 ? '两' : displayHour.toString()), '点', '半', ...baseKeywordsWithoutTime]; const specialKeywordsHanzi = [timePeriod, baseHour, '点', '半', ...baseKeywordsWithoutTime]; specialTimeCorrect = (specialKeywords.every(k => transcript.includes(k)) || specialKeywordsHanzi.every(k => transcript.includes(k))) && !transcript.includes('分'); } 
+        else if (minute === 45) { const specialKeywords = [timePeriod, (displayHour === 2 ? '两' : displayHour.toString()), '点', '三刻', ...baseKeywordsWithoutTime]; const specialKeywordsHanzi = [timePeriod, baseHour, '点', '三刻', ...baseKeywordsWithoutTime]; specialTimeCorrect = (specialKeywords.every(k => transcript.includes(k)) || specialKeywordsHanzi.every(k => transcript.includes(k))) && !transcript.includes('分'); }
+        if (specialTimeCorrect) isCorrect = true;
+    }
+    if (currentQuestion.questionType === 1 && !isCorrect) { const altKeywordsWithRi = currentQuestion.answerKeywords.map(k => k === '号' ? '日' : k); isCorrect = altKeywordsWithRi.every(keyword => transcript.includes(keyword)); if (!isCorrect && currentQuestion.altAnswerKeywords) { const altKeywordsWithRiHanzi = currentQuestion.altAnswerKeywords.map(k => k === '号' ? '日' : k); isCorrect = altKeywordsWithRiHanzi.every(keyword => transcript.includes(keyword)); } }
+    return isCorrect;
+}
+
+
+function startNewRound() {
+    practiceLog = [];
+    currentStage = 1;
+    questionNumberInStage = 1;
+    myBirthday.month = Math.floor(Math.random() * 12) + 1;
+    myBirthday.day = Math.floor(Math.random() * 28) + 1;
+    birthdayInfoEl.textContent = `${myBirthday.month}월 ${myBirthday.day}일`;
+    profileInfoEl.classList.remove('hidden');
+    quizSectionEl.classList.remove('hidden');
+    startScreenEl.classList.add('hidden');
+    generateNewQuestion();
+}
+
+function renderResultLog(logContainer, logs) {
+    logContainer.innerHTML = '';
+    logs.forEach(log => {
+        const logWrapper = document.createElement('div');
+        const icon = log.isCorrect ? '✅' : '❌';
+        const colorClass = log.isCorrect ? 'bg-green-100' : 'bg-red-100';
+        let modelAnswer = '';
+        const q = log.question;
+        let timePart = `${q.timePeriod}${q.displayHour === 2 ? '两' : chineseNumbers[q.displayHour.toString()]}点`;
+        if (q.minute > 0) { if (q.minute === 15) timePart += '一刻'; else if (q.minute === 30) timePart += '半'; else if (q.minute === 45) timePart += '三刻'; else timePart += getChineseMinute(q.minute) + '分'; }
+        switch(q.questionType) {
+            case 0: modelAnswer = timePart; break;
+            case 1: {
+                if (q.questionSubType === 'today') { modelAnswer = `${chineseNumbers[q.month.toString()]}月${chineseNumbers[q.day.toString()]}号`; }
+                else if (q.questionSubType === 'tomorrow') { const tomorrow = getDateInfo({month: q.month, day: q.day}, 1); modelAnswer = `${chineseNumbers[tomorrow.month.toString()]}月${chineseNumbers[tomorrow.day.toString()]}号`; }
+                else if (q.questionSubType === 'yesterday') { const yesterday = getDateInfo({month: q.month, day: q.day}, -1); modelAnswer = `${chineseNumbers[yesterday.month.toString()]}月${chineseNumbers[yesterday.day.toString()]}号`; }
+                else { modelAnswer = `我的生日是${chineseNumbers[myBirthday.month.toString()]}月${chineseNumbers[myBirthday.day.toString()]}号`; }
+                break;
+            }
+            case 2: {
+                 if (q.questionSubType === 'today') { modelAnswer = `${weekdays[q.dayOfWeek]}`; }
+                 else if (q.questionSubType === 'tomorrow') { const tomorrow = getDateInfo({month: q.month, day: q.day, dayOfWeek: q.dayOfWeek}, 1); modelAnswer = `${weekdays[tomorrow.dayOfWeek]}`; }
+                 else { const yesterday = getDateInfo({month: q.month, day: q.day, dayOfWeek: q.dayOfWeek}, -1); modelAnswer = `${weekdays[yesterday.dayOfWeek]}`; }
+                 break;
+            }
+            case 3: modelAnswer = `我${timePart}${q.activity}`; break;
+        }
+        logWrapper.innerHTML = `<div class="p-3 rounded-lg text-sm bg-sky-100 text-sky-800 mb-2"><p class="font-bold">⭐ 질문: ${q.questionText}</p><p class="text-xs text-gray-600">${q.questionPinyin}</p></div><div class="p-3 rounded-lg text-sm ${colorClass}"><div><p class="font-bold">😄 나 ${icon}</p><p class="text-base my-1">${log.transcript || '(음성 인식 실패)'}</p><p class="text-blue-600">${convertFullPhraseToPinyin(log.transcript)}</p>${!log.isCorrect ? `<p class="text-gray-600 mt-1">모범 답안: ${modelAnswer} (${convertFullPhraseToPinyin(modelAnswer)})</p>` : ''}</div><div class="flex space-x-2 mt-2">${log.audioUrl ? `<button data-audio-url="${log.audioUrl}" class="play-user-audio-btn audio-btn bg-blue-500 hover:bg-blue-600">내 녹음 듣기</button>` : ''}<button data-tts-text="${modelAnswer}" class="play-tts-audio-btn audio-btn bg-gray-500 hover:bg-gray-600">모범 발음 듣기</button></div></div>`;
+        logContainer.appendChild(logWrapper);
+    });
+}
+
+function generateResultText(logs) {
+    let textContent = "🐼 판다의 시간 탐험대 - 최종 연습 결과 🕰️\n\n";
+    textContent += "========================================\n\n";
+    let lastStage = 0;
+    const stageNames = ["", "날짜 묻기", "요일 묻기", "시간 묻기", "일과 묻기", "랜덤 묻기"];
+
+    logs.forEach(log => {
+        if (log.question.stage !== lastStage) {
+            textContent += `--- 단계 ${log.question.stage}: ${stageNames[log.question.stage]} ---\n\n`;
+            lastStage = log.question.stage;
+        }
+        const icon = log.isCorrect ? '✅' : '❌';
+        let modelAnswer = '';
+        const q = log.question;
+        let timePart = `${q.timePeriod}${q.displayHour === 2 ? '两' : chineseNumbers[q.displayHour.toString()]}点`;
+        if (q.minute > 0) { if (q.minute === 15) timePart += '一刻'; else if (q.minute === 30) timePart += '半'; else if (q.minute === 45) timePart += '三刻'; else timePart += getChineseMinute(q.minute) + '分'; }
+        switch(q.questionType) {
+            case 0: modelAnswer = timePart; break;
+            case 1: { if (q.questionSubType === 'today') { modelAnswer = `${chineseNumbers[q.month.toString()]}月${chineseNumbers[q.day.toString()]}号`; } else if (q.questionSubType === 'tomorrow') { const tomorrow = getDateInfo({month: q.month, day: q.day}, 1); modelAnswer = `${chineseNumbers[tomorrow.month.toString()]}月${chineseNumbers[tomorrow.day.toString()]}号`; } else if (q.questionSubType === 'yesterday') { const yesterday = getDateInfo({month: q.month, day: q.day}, -1); modelAnswer = `${chineseNumbers[yesterday.month.toString()]}月${chineseNumbers[yesterday.day.toString()]}号`; } else { modelAnswer = `我的生日是${chineseNumbers[myBirthday.month.toString()]}月${chineseNumbers[myBirthday.day.toString()]}号`; } break; }
+            case 2: { if (q.questionSubType === 'today') { modelAnswer = `${weekdays[q.dayOfWeek]}`; } else if (q.questionSubType === 'tomorrow') { const tomorrow = getDateInfo({month: q.month, day: q.day, dayOfWeek: q.dayOfWeek}, 1); modelAnswer = `${weekdays[tomorrow.dayOfWeek]}`; } else { const yesterday = getDateInfo({month: q.month, day: q.day, dayOfWeek: q.dayOfWeek}, -1); modelAnswer = `${weekdays[yesterday.dayOfWeek]}`; } break; }
+            case 3: modelAnswer = `我${timePart}${q.activity}`; break;
+        }
+        textContent += `⭐ 질문: ${q.questionText}\n`;
+        textContent += `   - 내 답변 ${icon}: ${log.transcript || '(음성 인식 실패)'}\n`;
+        if (!log.isCorrect) {
+            textContent += `   - 모범 답안: ${modelAnswer}\n`;
+        }
+        textContent += "\n";
+    });
+    textContent += "========================================\n";
+    textContent += "참 잘했어요! 다음에 또 연습해요!\n";
+    return textContent;
+}
+
+
+function showStageResultPopup() {
+    const stageLogs = practiceLog.filter(log => log.question.stage === currentStage);
+    const finalAttempts = {};
+    stageLogs.forEach(log => { finalAttempts[log.question.questionText + JSON.stringify(log.question.answerKeywords)] = log; });
+    stageResultTitleEl.textContent = `🎉 ${currentStage}단계 결과 🎉`;
+    renderResultLog(stageResultLogEl, Object.values(finalAttempts));
+    stageResultPopupEl.classList.remove('hidden');
+    stageResultPopupEl.classList.add('flex');
+}
+
+function showFinalResultPopup() {
+    const finalAttempts = {};
+    practiceLog.forEach(log => { finalAttempts[log.question.questionText + JSON.stringify(log.question.answerKeywords)] = log; });
+    renderResultLog(finalResultLogEl, Object.values(finalAttempts).sort((a,b) => a.question.stage - b.question.stage));
+    finalResultPopupEl.classList.remove('hidden');
+    finalResultPopupEl.classList.add('flex');
+}
+
+// --- Event Listeners ---
+startBtn.addEventListener('click', () => { if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { startErrorEl.textContent = '마이크를 사용할 수 없는 환경입니다.'; return; } navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { audioStream = stream; startNewRound(); }).catch(err => { console.error("Microphone access denied:", err); startErrorEl.textContent = '마이크 사용 권한이 필요합니다.'; }); });
+nextBtn.addEventListener('click', () => { if (questionNumberInStage >= QUESTIONS_PER_STAGE) { showStageResultPopup(); } else { questionNumberInStage++; generateNewQuestion(); } });
+nextStageBtn.addEventListener('click', () => { stageResultPopupEl.classList.add('hidden'); stageResultPopupEl.classList.remove('flex'); currentStage++; questionNumberInStage = 1; if (currentStage > MAX_STAGES) { showFinalResultPopup(); } else { generateNewQuestion(); } });
+recordBtn.addEventListener('click', () => { if (recordBtn.classList.contains('recording')) { if (recognition) recognition.stop(); } else { if (!audioStream) { feedbackEl.textContent = '마이크를 사용할 수 없습니다.'; return; } mediaRecorder = new MediaRecorder(audioStream); audioChunks = []; mediaRecorder.ondataavailable = e => audioChunks.push(e.data); mediaRecorder.onstop = () => { const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); const audioUrl = URL.createObjectURL(audioBlob); const lastLog = practiceLog[practiceLog.length - 1]; if (lastLog) { lastLog.audioUrl = audioUrl; } }; try { userInputEl.value = ''; feedbackEl.className = 'mt-4 text-xl font-semibold h-8 text-center'; mediaRecorder.start(); recognition.start(); } catch(e) { console.error("Recognition start failed:", e); feedbackEl.textContent = '음성 인식을 시작할 수 없습니다.'; } } });
+restartBtn.addEventListener('click', () => { finalResultPopupEl.classList.add('hidden'); finalResultPopupEl.classList.remove('flex'); startNewRound(); });
+closePopupBtn.addEventListener('click', () => { finalResultPopupEl.classList.add('hidden'); finalResultPopupEl.classList.remove('flex'); quizSectionEl.classList.add('hidden'); startScreenEl.classList.remove('hidden'); profileInfoEl.classList.add('hidden'); });
+stageResultLogEl.addEventListener('click', (e) => { const userBtn = e.target.closest('.play-user-audio-btn'); const ttsBtn = e.target.closest('.play-tts-audio-btn'); if (userBtn) new Audio(userBtn.dataset.audioUrl).play(); if (ttsBtn) speak(ttsBtn.dataset.ttsText); });
+finalResultLogEl.addEventListener('click', (e) => { const userBtn = e.target.closest('.play-user-audio-btn'); const ttsBtn = e.target.closest('.play-tts-audio-btn'); if (userBtn) new Audio(userBtn.dataset.audioUrl).play(); if (ttsBtn) speak(ttsBtn.dataset.ttsText); });
+
+saveResultBtn.addEventListener('click', () => {
+    const buttonOriginalText = saveResultBtn.textContent;
+    saveResultBtn.textContent = '저장 중...';
+    saveResultBtn.disabled = true;
+
+    const finalAttempts = {};
+    practiceLog.forEach(log => { finalAttempts[log.question.questionText + JSON.stringify(log.question.answerKeywords)] = log; });
+    const logs = Object.values(finalAttempts).sort((a, b) => a.question.stage - b.question.stage);
+    
+    const textContent = generateResultText(logs);
+    const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'panda-time-quiz-result.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    saveResultBtn.textContent = buttonOriginalText;
+    saveResultBtn.disabled = false;
+});
+
+// --- Speech Recognition Handlers ---
+recognition.onstart = () => { recordBtn.classList.add('recording'); };
+recognition.onend = () => { recordBtn.classList.remove('recording'); if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); };
+recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript.trim();
+    userInputEl.value = transcript;
+    const isCorrect = validateAnswer(transcript);
+    practiceLog.push({ question: { ...currentQuestion }, transcript, isCorrect });
+    if (isCorrect) {
+        feedbackEl.textContent = '정확해요! 👍';
+        feedbackEl.className += ' text-green-600 feedback-show';
+        recordBtn.disabled = true;
+        nextBtn.classList.remove('hidden');
+    } else {
+        feedbackEl.textContent = '다시 시도해보세요. 🤔';
+        feedbackEl.className += ' text-red-500 feedback-show';
+        recordBtn.disabled = false;
+    }
+};
+recognition.onerror = (event) => { 
+    console.error('Speech recognition error:', event.error, event.message); 
+    let errorMessage = `오류가 발생했어요. (${event.error})`;
+    if (event.error === 'no-speech') errorMessage = '음성을 인식하지 못했어요.';
+    else if (event.error === 'not-allowed') errorMessage = '마이크 접근이 차단되었습니다.';
+    else if (event.error === 'network') errorMessage = '네트워크 오류가 발생했습니다.';
+    else if (event.error === 'service-not-allowed') errorMessage = '음성 서비스가 허용되지 않았습니다. (기기 설정 확인)';
+    
+    feedbackEl.textContent = errorMessage; 
+    feedbackEl.className += ' text-orange-500 feedback-show'; 
+};
+
+</script>
 </body>
 </html>
